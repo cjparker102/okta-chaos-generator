@@ -134,14 +134,14 @@ def assign_manager_login(
         if index == 0:
             return None
         # Other executives report to the CEO
-        return all_users[0]["login"]
+        return all_users[0]["profile"]["login"]
 
     elif org_level == "director":
         # Directors report to a random executive
         if not all_users[:exec_count]:
             return None
         manager = random.choice(all_users[:exec_count])
-        return manager["login"]
+        return manager["profile"]["login"]
 
     elif org_level == "manager":
         # Managers report to a random director
@@ -149,7 +149,7 @@ def assign_manager_login(
         if not directors:
             return None
         manager = random.choice(directors)
-        return manager["login"]
+        return manager["profile"]["login"]
 
     else:
         # ICs report to a random manager
@@ -157,7 +157,7 @@ def assign_manager_login(
         if not managers:
             return None
         manager = random.choice(managers)
-        return manager["login"]
+        return manager["profile"]["login"]
 
 
 def get_title_for_level(org_level: str, department: str, dept_config: dict) -> str:
