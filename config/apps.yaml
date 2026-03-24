@@ -1,0 +1,115 @@
+# apps.yaml
+# The application catalog. Each app has a display label and an access tier
+# that indicates how sensitive it is. Chaos profiles use these tiers to
+# decide which apps are "crown jewels" worth abusing.
+#
+# Access tiers:
+#   low      — productivity tools, low risk if compromised
+#   medium   — business systems, moderate risk
+#   high     — production infrastructure, elevated risk
+#   critical — full org control, highest risk
+
+apps:
+  - id: access-github
+    label: GitHub
+    tier: high
+    description: Source code and CI/CD pipelines
+
+  - id: access-aws-dev
+    label: AWS Console (Dev)
+    tier: medium
+    description: Non-production AWS environment
+
+  - id: access-aws-prod
+    label: AWS Console (Prod)
+    tier: critical
+    description: Production AWS environment — full infrastructure access
+
+  - id: access-okta-readonly
+    label: Okta (Read Only)
+    tier: medium
+    description: View-only access to Okta admin console
+
+  - id: access-okta-admin
+    label: Okta Admin Console
+    tier: critical
+    description: Full Okta administration — users, groups, policies, apps
+
+  - id: access-salesforce
+    label: Salesforce
+    tier: medium
+    description: CRM — customer and pipeline data
+
+  - id: access-salesforce-admin
+    label: Salesforce Admin
+    tier: high
+    description: Salesforce administration — user management and configuration
+
+  - id: access-hr-systems
+    label: HR Systems
+    tier: high
+    description: Employee records, compensation, and PII
+
+  - id: access-hr-admin
+    label: HR Systems Admin
+    tier: critical
+    description: Full HR admin — compensation, terminations, org changes
+
+  - id: access-workday
+    label: Workday
+    tier: medium
+    description: HR and finance platform — payroll and benefits
+
+  - id: access-finance-systems
+    label: Finance Systems
+    tier: high
+    description: Financial reporting and accounting data
+
+  - id: access-finance-admin
+    label: Finance Systems Admin
+    tier: critical
+    description: Full finance admin — ledgers, payroll processing
+
+  - id: access-pagerduty
+    label: PagerDuty
+    tier: high
+    description: Incident management — production on-call access
+
+  - id: access-datadog
+    label: Datadog
+    tier: high
+    description: Infrastructure and application monitoring
+
+  - id: access-vpn
+    label: VPN
+    tier: medium
+    description: Corporate network access
+
+  - id: access-zoom
+    label: Zoom
+    tier: low
+    description: Video conferencing
+
+  - id: access-docusign
+    label: DocuSign
+    tier: medium
+    description: Contract signing — legal documents
+
+  - id: access-slack
+    label: Slack
+    tier: low
+    description: Internal messaging
+
+  - id: access-google-workspace
+    label: Google Workspace
+    tier: low
+    description: Email, docs, calendar
+
+# Apps considered "crown jewels" — used by chaos profiles to over-provision
+crown_jewel_app_ids:
+  - access-aws-prod
+  - access-okta-admin
+  - access-hr-admin
+  - access-finance-admin
+  - access-pagerduty
+  - access-datadog
