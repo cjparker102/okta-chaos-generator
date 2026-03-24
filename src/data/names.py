@@ -59,8 +59,8 @@ def _clean_for_login(name: str) -> str:
     normalized = unicodedata.normalize("NFKD", name)
     # Keep only ASCII characters
     ascii_only = normalized.encode("ascii", "ignore").decode("ascii")
-    # Remove anything that isn't a letter, number, space, or hyphen
-    cleaned = re.sub(r"[^a-zA-Z0-9 \-]", "", ascii_only)
+    # Remove anything that isn't a letter, number, or hyphen (spaces removed too)
+    cleaned = re.sub(r"[^a-zA-Z0-9\-]", "", ascii_only)
     # Lowercase and strip whitespace
     return cleaned.strip().lower()
 

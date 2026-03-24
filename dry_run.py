@@ -14,6 +14,7 @@ Run with:
     python dry_run.py
 """
 
+import asyncio
 from rich.console import Console
 from rich.panel import Panel
 
@@ -25,7 +26,7 @@ from src.okta.provisioner import provision_all
 console = Console()
 
 
-def main() -> None:
+async def main() -> None:
     """
     Runs the full generation and chaos pipeline in dry-run mode.
     Prints everything — including the chaos manifest — to the terminal.
@@ -51,7 +52,7 @@ def main() -> None:
     inject_chaos(users, dry_run=True)
 
     # Print the full provisioning plan (no API calls)
-    provision_all(users, groups, dry_run=True)
+    await provision_all(users, groups, dry_run=True)
 
     console.print(
         "\n[dim]This was a dry run. To push to Okta, run:[/dim] "
@@ -60,4 +61,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
