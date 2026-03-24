@@ -1,0 +1,170 @@
+# departments.yaml
+# Defines each department's job titles, group memberships, and app access.
+# This is what a "clean" user in each department looks like before chaos is applied.
+
+engineering:
+  titles:
+    - Software Engineer
+    - Senior Software Engineer
+    - Staff Engineer
+    - Principal Engineer
+    - Engineering Manager
+    - DevOps Engineer
+    - Site Reliability Engineer
+    - Security Engineer
+    - QA Engineer
+  groups:
+    department: dept-engineering
+    access:
+      - access-github
+      - access-vpn
+      - access-aws-dev
+    lead_groups:                      # only assigned to senior/lead titles
+      - role-engineers-lead
+      - access-aws-prod
+      - access-pagerduty
+      - access-datadog
+
+sales:
+  titles:
+    - Sales Development Representative
+    - Account Executive
+    - Senior Account Executive
+    - Sales Manager
+    - Regional Sales Manager
+    - VP of Sales
+    - Customer Success Manager
+    - Sales Operations Analyst
+  groups:
+    department: dept-sales
+    access:
+      - access-salesforce
+      - access-zoom
+      - access-vpn
+    lead_groups:
+      - role-managers
+      - access-salesforce-admin
+
+hr:
+  titles:
+    - HR Coordinator
+    - HR Generalist
+    - Senior HR Business Partner
+    - HR Manager
+    - Recruiter
+    - Senior Recruiter
+    - Talent Acquisition Lead
+    - Director of People Operations
+  groups:
+    department: dept-hr
+    access:
+      - access-hr-systems
+      - access-workday
+      - access-vpn
+    lead_groups:
+      - role-managers
+      - access-hr-admin
+
+finance:
+  titles:
+    - Financial Analyst
+    - Senior Financial Analyst
+    - Accounting Specialist
+    - Controller
+    - Finance Manager
+    - Director of Finance
+    - VP of Finance
+    - CFO
+  groups:
+    department: dept-finance
+    access:
+      - access-finance-systems
+      - access-workday
+      - access-vpn
+    lead_groups:
+      - role-managers
+      - access-finance-admin
+      - role-executives           # CFO level
+
+it:
+  titles:
+    - IT Support Specialist
+    - IT Systems Administrator
+    - Network Engineer
+    - Security Analyst
+    - IAM Engineer
+    - IT Manager
+    - Director of IT
+    - CISO
+  groups:
+    department: dept-it
+    access:
+      - access-vpn
+      - access-aws-dev
+      - access-github
+      - access-okta-readonly
+    lead_groups:
+      - role-managers
+      - access-aws-prod
+      - access-pagerduty
+      - access-datadog
+      - access-okta-admin       # IT leads get Okta admin
+
+marketing:
+  titles:
+    - Marketing Coordinator
+    - Content Strategist
+    - Digital Marketing Specialist
+    - Marketing Manager
+    - Product Marketing Manager
+    - Director of Marketing
+    - VP of Marketing
+  groups:
+    department: dept-marketing
+    access:
+      - access-zoom
+      - access-vpn
+    lead_groups:
+      - role-managers
+
+legal:
+  titles:
+    - Legal Coordinator
+    - Paralegal
+    - Associate Counsel
+    - Senior Counsel
+    - General Counsel
+  groups:
+    department: dept-legal
+    access:
+      - access-vpn
+      - access-docusign
+    lead_groups:
+      - role-managers
+
+contractors:
+  titles:
+    - Contract Engineer
+    - Contract Developer
+    - Contract Analyst
+    - IT Contractor
+    - Security Contractor
+    - Contract Project Manager
+  groups:
+    department: dept-contractors
+    access:
+      - access-vpn
+      - access-github             # scoped access only
+    lead_groups: []               # contractors never get lead/admin groups
+
+# Executive titles that span departments (assigned at top of hierarchy)
+executive_titles:
+  - CEO
+  - CTO
+  - COO
+  - CFO
+  - CISO
+  - VP of Engineering
+  - VP of Sales
+  - VP of Finance
+  - VP of People
