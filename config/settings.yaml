@@ -1,0 +1,54 @@
+# settings.yaml
+# Master configuration for the chaos generator.
+# Adjust these values to control the size and behavior of generation.
+
+generation:
+  # Total number of users to generate — picked randomly between min and max
+  user_count:
+    min: 100
+    max: 200
+
+  # What percentage of users get chaos injected — picked randomly, never shown during main.py
+  chaos_density:
+    min: 0.15
+    max: 0.40
+
+  # Set a number here to get reproducible results (useful for debugging)
+  # Leave as null for true randomness every run
+  seed: null
+
+  # Prefix added to all generated logins and group names to identify them later
+  # Makes cleanup reliable — we only delete things with this prefix
+  resource_prefix: "chaos-"
+
+# Department headcount weights — must add up to 1.0
+# Higher weight = more users in that department
+departments:
+  engineering:   0.28
+  sales:         0.20
+  hr:            0.08
+  finance:       0.10
+  it:            0.10
+  marketing:     0.12
+  legal:         0.06
+  contractors:   0.06
+
+# Chaos tier weights — controls how scary the org is
+# Higher weight = more chaos of that tier gets injected
+chaos:
+  tier_weights:
+    critical: 0.15
+    high:     0.25
+    medium:   0.35
+    low:      0.25
+
+  # Max number of chaos types that can be stacked on a single user
+  max_stack: 2
+
+# Okta API settings
+okta:
+  # Pause between API calls in seconds — prevents hitting Okta rate limits
+  rate_limit_delay: 0.3
+
+  # How many times to retry a failed API call before giving up
+  max_retries: 3
