@@ -15,6 +15,7 @@ Design decisions:
   - Service accounts are excluded from most chaos (they have their own profile)
 """
 
+import copy
 import random
 import json
 import os
@@ -23,6 +24,8 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from src.chaos.profiles import PROFILES_BY_TIER, PROFILES_BY_ID, PROFILES
+from src.data.names import make_login_unique
+from src.data.timeline import NOW, format_okta_timestamp, generate_hire_date
 from src.generator.app_generator import assign_apps
 
 
@@ -195,6 +198,12 @@ def inject_chaos(users: list[dict], dry_run: bool = False) -> dict:
                 f"[bold]{user['profile']['login']}[/bold] → {types_str}"
             )
 
+    # Create duplicate accounts for users tagged by the duplicate_identity profile.
+    # The original is the stale "old" account. The clone is a fresh "new" account
+    # with the same name but a different login — mimicking a rehire where the
+    # old account was never disabled.
+    dupes_created = _create_duplicate_accounts(users, manifest, dry_run)
+
     # After all chaos is applied, assign final apps to every user.
     # We do this AFTER chaos because some mutations change employee_type
     # or groups, which affects app eligibility.
@@ -208,6 +217,97 @@ def inject_chaos(users: list[dict], dry_run: bool = False) -> dict:
         console.print(f"\n[dim]Manifest written to .chaos_manifest.json[/dim]")
 
     return manifest
+
+
+def _create_duplicate_accounts(
+    users: list[dict],
+    manifest: dict,
+    dry_run: bool,
+) -> int:
+    """
+    Scans for users tagged with _is_duplicate_primary and creates a
+    second account for each — the "new" account that should have replaced
+    the old one but didn't.
+
+    The original (primary) account is already stale from the mutation.
+    The clone gets:
+      - Same firstName and lastName (how auditors spot duplicates)
+      - A different login (e.g. john.smith2@acmecorp.com)
+      - Recent hire date and active login (the "current" account)
+      - Same department and groups (inherited the role)
+
+    Args:
+        users:    The user list — clones are appended in place.
+        manifest: The chaos manifest — clones are added to the victim list.
+        dry_run:  If True, prints details to the console.
+
+    Returns:
+        Number of duplicate accounts created.
+    """
+    # Collect all existing logins so we can ensure uniqueness
+    existing_logins = {u["profile"]["login"] for u in users}
+    dupes_created = 0
+
+    # Find all primary-tagged users and their indices BEFORE we start appending
+    primaries = [
+        (i, u) for i, u in enumerate(users)
+        if "_is_duplicate_primary" in u.get("chaos_tags", [])
+    ]
+
+    for original_idx, original in primaries:
+        # Deep copy so we don't share mutable objects with the original
+        clone = copy.deepcopy(original)
+
+        # Build a new login — same name pattern but with a numeric suffix
+        original_login = original["profile"]["login"]
+        clone_login = make_login_unique(original_login, existing_logins)
+        existing_logins.add(clone_login)
+
+        clone["profile"]["login"] = clone_login
+        clone["profile"]["email"] = clone_login
+
+        # The clone is the "new" account — recent hire, active usage
+        recent_hire = generate_hire_date("full_time")
+        clone["credentials"]["created"] = format_okta_timestamp(recent_hire)
+        clone["credentials"]["last_login"] = format_okta_timestamp(NOW)
+        clone["credentials"]["_last_login_raw"] = NOW
+        clone["credentials"]["_hire_date_raw"] = recent_hire
+        clone["credentials"]["_activity_level"] = "active"
+        clone["credentials"]["status"] = "ACTIVE"
+
+        # Tag the clone so reveal.py can identify both halves
+        clone["chaos_tags"] = ["duplicate_identity", "_is_duplicate_clone"]
+
+        # Append the clone to the user list
+        clone_idx = len(users)
+        users.append(clone)
+        dupes_created += 1
+
+        # Add the clone to the manifest
+        manifest["victims"].append({
+            "index":       clone_idx,
+            "login":       clone_login,
+            "chaos_types": ["duplicate_identity"],
+            "tiers":       ["medium"],
+            "duplicate_of": original_login,
+        })
+
+        # Update the original's manifest entry to reference the clone
+        for entry in manifest["victims"]:
+            if entry["login"] == original_login and "duplicate_identity" in entry["chaos_types"]:
+                entry["duplicate_of"] = clone_login
+                break
+
+        if dry_run:
+            console.print(
+                f"   [yellow]DUPLICATE[/yellow] "
+                f"[bold]{clone_login}[/bold] ← clone of {original_login}"
+            )
+
+    # Update total user count in the manifest
+    manifest["total_users"] = len(users)
+
+    return dupes_created
 
 
 def _write_manifest(manifest: dict) -> None:
