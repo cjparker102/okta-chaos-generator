@@ -139,7 +139,7 @@ async def _provision_groups(
             }
 
             result = await safe_api_call(
-                client.create_group(group_body),
+                lambda: client.create_group(group_body),
                 description=f"create group {group['name']}",
             )
 
@@ -200,7 +200,6 @@ async def _provision_users(
                     "department":     profile.get("department", ""),
                     "organization":   profile.get("organization", "AcmeCorp"),
                     "employeeNumber": profile.get("employeeNumber", ""),
-                    "employeeType":   profile.get("employeeType", "full_time"),
                     "mobilePhone":    profile.get("mobilePhone"),
                     "city":           profile.get("city"),
                     "userType":       profile.get("userType", "full_time"),
@@ -215,13 +214,30 @@ async def _provision_users(
 
             # activate=True creates the user in ACTIVE status immediately
             result = await safe_api_call(
-                client.create_user(user_body, {"activate": "true"}),
+                lambda: client.create_user(user_body, {"activate": "true"}),
                 description=f"create user {profile['login']}",
             )
 
             created_user, _, err = result
             if err:
-                console.print(f"   [red]Failed to create {profile['login']}: {err}[/red]")
+                err_str = str(err)
+                # If the user already exists (e.g. from a partial previous run),
+                # look them up by login and record them so group assignments work.
+                if "already exists" in err_str:
+                    login = profile["login"]
+                    lookup = await safe_api_call(
+                        lambda l=login: client.get_user(l),
+                        description=f"lookup existing user {login}",
+                    )
+                    existing_user, _, lookup_err = lookup
+                    if not lookup_err and existing_user:
+                        user_id_map[login] = existing_user.id
+                        record_user(existing_user.id, login)
+                        console.print(f"   [yellow]User {login} already exists — reusing[/yellow]")
+                    else:
+                        console.print(f"   [red]Failed to create or find {login}: {err}[/red]")
+                else:
+                    console.print(f"   [red]Failed to create {profile['login']}: {err}[/red]")
             else:
                 user_id_map[profile["login"]] = created_user.id
                 record_user(created_user.id, profile["login"])
@@ -283,7 +299,7 @@ async def _assign_group_memberships(
                     continue
 
                 await safe_api_call(
-                    client.add_user_to_group(group_id, user_id),
+                    lambda gid=group_id, uid=user_id: client.add_user_to_group(gid, uid),
                     description=f"add {login} to {group_name}",
                 )
                 progress.advance(task)
@@ -334,7 +350,7 @@ async def _assign_admin_roles(
                 role_body = {"type": role_type}
 
                 result = await safe_api_call(
-                    client.assign_role_to_user(user_id, role_body),
+                    lambda uid=user_id, rb=role_body: client.assign_role_to_user(uid, rb),
                     description=f"assign {role_type} to {login}",
                 )
 

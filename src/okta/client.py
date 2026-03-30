@@ -64,9 +64,9 @@ def build_client() -> OktaClient:
     return OktaClient(config)
 
 
-async def safe_api_call(coro, description: str = "", retries: int = 3):
+async def safe_api_call(coro_factory, description: str = "", retries: int = 3):
     """
-    Executes an Okta API coroutine with automatic retry on failure.
+    Executes an Okta API call with automatic retry on failure.
 
     If Okta returns an error (rate limit, transient failure), we wait
     briefly and try again up to `retries` times before giving up.
@@ -77,9 +77,11 @@ async def safe_api_call(coro, description: str = "", retries: int = 3):
       Attempt 3 fails → wait 4s → give up
 
     Args:
-        coro:        The awaitable Okta SDK coroutine to run.
-        description: Human-readable name for logging (e.g. "create user john.doe").
-        retries:     Maximum number of retry attempts.
+        coro_factory: A callable (lambda) that returns a fresh awaitable
+                      coroutine each time. Coroutines can only be awaited
+                      once, so we need a new one for each retry attempt.
+        description:  Human-readable name for logging (e.g. "create user john.doe").
+        retries:      Maximum number of retry attempts.
 
     Returns:
         The tuple returned by the Okta SDK (result, response, error).
@@ -88,7 +90,7 @@ async def safe_api_call(coro, description: str = "", retries: int = 3):
     delay    = settings["okta"]["rate_limit_delay"]
 
     for attempt in range(retries):
-        result = await coro
+        result = await coro_factory()
 
         # Okta SDK returns a 3-tuple: (data, response, error)
         # We check the last element for errors
@@ -109,6 +111,11 @@ async def safe_api_call(coro, description: str = "", retries: int = 3):
                 )
                 await asyncio.sleep(wait_time)
                 continue
+
+            # 400 validation errors will never succeed on retry — return immediately
+            # so the caller can handle them (e.g. "already exists")
+            if "400" in error_msg or "validation" in error_msg.lower():
+                return result
 
             # Other error on last attempt — raise it
             if attempt == retries - 1:
