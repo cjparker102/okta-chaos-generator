@@ -204,7 +204,7 @@ def _build_credentials(
     }
 
 
-def generate_users(seed: int | None = None) -> list[dict]:
+def generate_users(seed: int | None = None, user_count: int | None = None) -> list[dict]:
     """
     The main function. Generates the full list of clean user records.
 
@@ -213,7 +213,9 @@ def generate_users(seed: int | None = None) -> list[dict]:
     ready to be mutated by the chaos engine and then pushed to Okta.
 
     Args:
-        seed: Optional random seed for reproducible generation.
+        seed:       Optional random seed for reproducible generation.
+        user_count: Optional override for total user count. If None,
+                    picks randomly between min and max from settings.yaml.
 
     Returns:
         A list of user dicts, each containing:
@@ -232,11 +234,12 @@ def generate_users(seed: int | None = None) -> list[dict]:
 
     settings, departments, apps_config = _load_config()
 
-    # Determine total user count — random between min and max
-    user_count = random.randint(
-        settings["generation"]["user_count"]["min"],
-        settings["generation"]["user_count"]["max"],
-    )
+    # Use provided count or pick randomly between min and max
+    if user_count is None:
+        user_count = random.randint(
+            settings["generation"]["user_count"]["min"],
+            settings["generation"]["user_count"]["max"],
+        )
 
     # Build the org hierarchy so we know how many executives, directors, etc.
     hierarchy = build_hierarchy(user_count)
